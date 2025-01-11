@@ -1,0 +1,42 @@
+package:
+  name: conda-spawn
+  {% if GIT_DESCRIBE_TAG is defined and GIT_BUILD_STR is defined %}
+  version: {{ GIT_DESCRIBE_TAG }}+{{ GIT_BUILD_STR }}
+  {% else %}
+  version: 0.0.0dev0
+  {% endif %}
+
+source:
+  # git_url only captures committed code
+  git_url: ../
+
+build:
+  # can't be noarch because we can't place EXTERNALLY-MANAGED in stdlib (first level is site-packages)
+  number: 0
+  script:
+    - {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+
+requirements:
+  host:
+    - python
+    - pip
+    - hatchling >=1.12.2
+    - hatch-vcs >=0.2.0
+    - importlib_resources  # [py<39]
+  run:
+    - python
+    - conda >=23.9.0
+
+test:
+  imports:
+    - conda_spawn
+    - conda_spawn.main
+  commands:
+    - conda go --help
+
+about:
+  home: https://github.com/jaimergp/conda-spawn
+  license: MIT
+  license_file: LICENSE
+  summary: Better PyPI interoperability for the conda ecosystem
+  dev_url: https://github.com/jaimergp/conda-spawn
