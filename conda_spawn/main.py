@@ -1,8 +1,9 @@
 """ """
+
 from __future__ import annotations
 from os.path import expanduser, expandvars, abspath
 from pathlib import Path
-from typing import Type
+from typing import Type, Iterable
 
 from conda.base.constants import ROOT_ENV_NAME
 from conda.base.context import context, locate_prefix_by_name
@@ -13,10 +14,12 @@ from .exceptions import ShellNotSupported
 from .shell import SHELLS, Shell, detect_shell_class
 
 
-def spawn(prefix: Path, shell_cls: Shell | None = None) -> int:
+def spawn(
+    prefix: Path, shell_cls: Shell | None = None, command: Iterable[str] | None = None
+) -> int:
     if shell_cls is None:
         shell_cls = detect_shell_class()
-    return shell_cls().spawn(prefix)
+    return shell_cls().spawn(prefix, command=command)
 
 
 def environment_speficier_to_path(
@@ -29,7 +32,7 @@ def environment_speficier_to_path(
         return Path(context.root_prefix)
     if name:
         return Path(locate_prefix_by_name(name))
-    
+
     prefix = Path(abspath(expanduser(expandvars((prefix)))))
     if (prefix / "conda-meta" / "history").is_dir():
         raise DirectoryNotACondaEnvironmentError(prefix)

@@ -2,20 +2,21 @@ from __future__ import annotations
 
 import fcntl
 import os
+import shlex
 import shutil
 import signal
 import struct
 import sys
 import termios
-import time
 from tempfile import NamedTemporaryFile
 from logging import getLogger
 from pathlib import Path
+from typing import Iterable
 
 import pexpect
 from conda import activate
 from conda.base.context import context
-
+from conda.common.path import paths_equal
 log = getLogger(f"conda.{__name__}")
 
 
@@ -33,7 +34,7 @@ class Shell:
 class PosixShell(Shell):
     Activator = activate.PosixActivator
 
-    def spawn(self, prefix: Path, command: str | None = None) -> int:
+    def spawn(self, prefix: Path, command: Iterable[str] | None = None) -> int:
         def _sigwinch_passthrough(sig, data):
             # NOTE: Taken verbatim from pexpect's .interact() docstring.
             # Check for buggy platforms (see pexpect.setwinsize()).
@@ -45,19 +46,14 @@ class PosixShell(Shell):
             a = struct.unpack("HHHH", fcntl.ioctl(sys.stdout.fileno(), TIOCGWINSZ, s))
             child.setwinsize(a[0], a[1])
 
-        activator = self.Activator(["activate", str(prefix)])
-        activator._parse_and_set_args()
-        script = activator.activate()
-        env = os.environ.copy()
-        env["CONDA_SPAWN"] = "1"
+        script, prompt = self.script_and_prompt(prefix)
+        executable, args = self.executable_and_args()
         size = shutil.get_terminal_size()
-        # TODO: Customize which shell gets used; this below is the default!
-        executable = os.environ.get("SHELL", "/bin/bash")
-        args = ["-l", "-i"]
+
         child = pexpect.spawn(
             executable,
             args,
-            env=env,
+            env=self.env(),
             echo=False,
             dimensions=(size.lines, size.columns),
         )
@@ -68,28 +64,42 @@ class PosixShell(Shell):
                 delete=False,
                 mode="w",
             ) as f:
-                f.write(script.replace("PS1", "_PS1"))
+                f.write(script)
             signal.signal(signal.SIGWINCH, _sigwinch_passthrough)
-            # This exact sequence of commands is very deliberate!
-            # 1. Source the activation script. We do this in a single line for performance.
+            # Source the activation script. We do this in a single line for performance.
             # It's slower to send several lines than paying the IO overhead.
-            child.sendline(f" . '{f.name}'")
-            # 2. Wait for a newline; this swallows the echo (echo=False doesn't work?)
-            child.expect('\r\n')
-            # 3. Set PS1 in shell directly. Otherwise we might lose it!
-            child.sendline(' PS1="(conda-spawn) ${PS1:-}"')
-            # 4. Restore echo AND wait for newline, in that order.
-            # Other order would leak the PS1 command to output.
-            child.setecho(True)
-            child.expect('\r\n')
-            # 5. Here we can send any program to start
+            child.sendline(f' . "{f.name}" && PS1="{prompt}${{PS1:-}}" && stty echo')
+            os.read(child.child_fd, 4096)  # consume buffer before interact
+            if Path(executable).name == "zsh":
+                child.expect('\r\n')
             if command:
-                child.sendline(command)
+                child.sendline(shlex.join(command))
             child.interact()
         finally:
             os.unlink(f.name)
         return child.wait()
 
+    def script_and_prompt(self, prefix: Path) -> tuple[str, str]:
+        activator = self.Activator(["activate", str(prefix)])
+        conda_default_env = os.getenv("CONDA_DEFAULT_ENV", activator._default_env(str(prefix)))
+        prompt = activator._prompt_modifier(str(prefix), conda_default_env)
+        script = activator.execute()
+        lines = []
+        for line in script.splitlines(keepends=True):
+            if "PS1=" in line:
+                continue
+            lines.append(line)
+        script = "".join(lines)
+        return script, prompt
+    
+    def executable_and_args(self) -> tuple[str, list[str]]:
+        # TODO: Customize which shell gets used; this below is the default!
+        return os.environ.get("SHELL", "/bin/bash"), ["-l", "-i"]
+    
+    def env(self) -> dict[str, str]:
+        env = os.environ.copy()
+        env["CONDA_SPAWN"] = "1"
+        return env
 
 class CshShell(Shell):
     def spawn(self, prefix: Path) -> int: ...

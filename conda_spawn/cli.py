@@ -16,6 +16,11 @@ def configure_parser(parser: argparse.ArgumentParser):
     add_parser_help(parser)
     add_parser_prefix(parser, prefix_required=True)
 
+    parser.add_argument(
+        "command",
+        nargs="*",
+        help="Optional program and arguments to run after starting the shell.",
+    )
     shell_group = parser.add_argument_group("Shell options")
     shell_group.add_argument(
         "-s",
@@ -30,4 +35,4 @@ def execute(args: argparse.Namespace) -> int:
 
     prefix = environment_speficier_to_path(args.name, args.prefix)
     shell = shell_specifier_to_shell(args.shell)
-    return spawn(prefix, shell)
+    return spawn(prefix, shell, command=args.command)
