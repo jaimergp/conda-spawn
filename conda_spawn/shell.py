@@ -1,19 +1,24 @@
 from __future__ import annotations
 
-import fcntl
 import os
 import shlex
 import shutil
 import signal
+import subprocess
 import struct
 import sys
-import termios
 from tempfile import NamedTemporaryFile
 from logging import getLogger
 from pathlib import Path
 from typing import Iterable
 
-import pexpect
+if sys.platform != "win32":
+    import fcntl
+    import termios
+
+    import pexpect
+
+
 from conda import activate
 
 
@@ -102,23 +107,78 @@ class PosixShell(Shell):
         return env
 
 class CshShell(Shell):
-    def spawn(self, prefix: Path) -> int: ...
+        def spawn(self, prefix: Path, command: Iterable[str] | None = None) -> int: ...
 
 
 class XonshShell(Shell):
-    def spawn(self, prefix: Path) -> int: ...
+        def spawn(self, prefix: Path, command: Iterable[str] | None = None) -> int: ...
 
 
 class FishShell(Shell):
-    def spawn(self, prefix: Path) -> int: ...
-
-
-class CmdExeShell(Shell):
-    def spawn(self, prefix: Path) -> int: ...
+        def spawn(self, prefix: Path, command: Iterable[str] | None = None) -> int: ...
 
 
 class PowershellShell(Shell):
-    def spawn(self, prefix: Path) -> int: ...
+    Activator = activate.PowerShellActivator
+    tmp_suffix = ".ps1"
+    def spawn(self, prefix: Path, command: Iterable[str] | None = None) -> int:
+        executable, args = self.executable_and_args()
+        script, _ = self.script_and_prompt(prefix)
+        try:
+            with NamedTemporaryFile(
+                prefix="conda-spawn-",
+                suffix=self.tmp_suffix,
+                delete=False,
+                mode="w",
+            ) as f:
+                f.write(f"{script}\r\n")
+                if command:
+                    command = subprocess.list2cmdline(command) 
+                    f.write(f"echo {command}\r\n")
+                    f.write(f"{command}\r\n")
+            args.append(f.name)
+            proc = subprocess.run([executable, *args], env=self.env())
+            return proc.returncode
+        finally:
+            os.unlink(f.name)
+
+    def script_and_prompt(self, prefix: Path) -> tuple[str, str]:
+        activator = self.Activator(["activate", str(prefix)])
+        conda_default_env = os.getenv("CONDA_DEFAULT_ENV", activator._default_env(str(prefix)))
+        prompt_mod = activator._prompt_modifier(str(prefix), conda_default_env)
+        script = activator.execute()
+        script += (
+            '\r\n$old_prompt = $function:prompt\r\n'
+            f'function prompt {{"{prompt_mod}$($old_prompt.Invoke())"}};'
+        )
+        return script, ""
+    
+    def executable_and_args(self) -> tuple[str, list[str]]:
+        # TODO: Customize which shell gets used; this below is the default!
+        return "powershell", ["-NoLogo", "-NoExit", "-File"]
+    
+    def env(self) -> dict[str, str]:
+        env = os.environ.copy()
+        env["CONDA_SPAWN"] = "1"
+        return env
+
+
+class CmdExeShell(PowershellShell):
+    Activator = activate.CmdExeActivator
+    tmp_suffix = ".bat"
+    def script_and_prompt(self, prefix: Path) -> tuple[str, str]:
+        activator = self.Activator(["activate", str(prefix)])
+        conda_default_env = os.getenv("CONDA_DEFAULT_ENV", activator._default_env(str(prefix)))
+        prompt_mod = activator._prompt_modifier(str(prefix), conda_default_env)
+        script = "@ECHO OFF\r\n"
+        script += activator.execute()
+        script += f"\r\n@PROMPT {prompt_mod}$P$G"
+        script += "@ECHO ON\r\n"
+        return script, ""
+    
+    def executable_and_args(self) -> tuple[str, list[str]]:
+        # TODO: Customize which shell gets used; this below is the default!
+        return "cmd", ["/K"]
 
 
 SHELLS: dict[str, type[Shell]] = {
@@ -137,4 +197,6 @@ SHELLS: dict[str, type[Shell]] = {
 
 
 def detect_shell_class():
+    if sys.platform == "win32":
+        return CmdExeShell
     return PosixShell
