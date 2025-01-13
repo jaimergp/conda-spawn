@@ -10,7 +10,7 @@ Activate conda environments in new shell processes.
 
 This is a replacement subcommand for `conda activate` and `conda deactivate`.
 
-Instead of writing state to your current shell session, `conda go ENV-NAME` will spawn a new shell with your activated environment. To deactivate, exit the process with <kbd>Ctrl</kbd>+<kbd>C</kbd> or <kbd>Ctrl</kbd>+<kbd>D</kbd>.
+Instead of writing state to your current shell session, `conda spawn -n ENV-NAME` will spawn a new shell with your activated environment. To deactivate, exit the process with <kbd>Ctrl</kbd>+<kbd>C</kbd> or <kbd>Ctrl</kbd>+<kbd>D</kbd>.
 
 ## Why?
 

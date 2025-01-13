@@ -2,7 +2,7 @@
 
 Welcome to the `conda-spawn` documentation!
 
-`conda-spawn` allows you to activate conda environments in new shell processes.
+`conda spawn` allows you to activate conda environments in new shell processes.
 
 
 :::{warning}
