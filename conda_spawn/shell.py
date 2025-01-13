@@ -15,8 +15,8 @@ from typing import Iterable
 
 import pexpect
 from conda import activate
-from conda.base.context import context
-from conda.common.path import paths_equal
+
+
 log = getLogger(f"conda.{__name__}")
 
 
