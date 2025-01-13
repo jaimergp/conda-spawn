@@ -18,7 +18,7 @@ if sys.platform != "win32":
 
     import pexpect
 
-
+import shellingham
 from conda import activate
 
 
@@ -192,21 +192,35 @@ class CmdExeShell(PowershellShell):
 
 
 SHELLS: dict[str, type[Shell]] = {
-    "posix": PosixShell,
     "ash": PosixShell,
     "bash": PosixShell,
-    "dash": PosixShell,
-    "zsh": PosixShell,
+    "cmd.exe": CmdExeShell,
+    "cmd": CmdExeShell,
     "csh": CshShell,
+    "dash": PosixShell,
+    "fish": FishShell,
+    "posix": PosixShell,
+    "powershell": PowershellShell,
     "tcsh": CshShell,
     "xonsh": XonshShell,
-    "cmd.exe": CmdExeShell,
-    "fish": FishShell,
-    "powershell": PowershellShell,
+    "zsh": PosixShell,
 }
 
 
-def detect_shell_class():
+def default_shell_class():
     if sys.platform == "win32":
         return CmdExeShell
     return PosixShell
+
+
+def detect_shell_class():
+    try:
+        name, _ = shellingham.detect_shell()
+    except shellingham.ShellDetectionFailure:
+        return default_shell_class()
+    else:
+        try:
+            return SHELLS[name]
+        except KeyError:
+            log.warning("Did not recognize shell %s, returning default.", name)
+            return default_shell_class()

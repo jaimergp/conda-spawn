@@ -8,7 +8,6 @@ from typing import Type, Iterable
 from conda.base.constants import ROOT_ENV_NAME
 from conda.base.context import context, locate_prefix_by_name
 from conda.exceptions import DirectoryNotACondaEnvironmentError
-from shellingham import ShellDetectionFailure, detect_shell
 
 from .exceptions import ShellNotSupported
 from .shell import SHELLS, Shell, detect_shell_class
