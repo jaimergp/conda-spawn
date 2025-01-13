@@ -38,6 +38,7 @@ class Shell:
 
 class PosixShell(Shell):
     Activator = activate.PosixActivator
+    tmp_suffix = ".sh"
 
     def spawn(self, prefix: Path, command: Iterable[str] | None = None) -> int:
         def _sigwinch_passthrough(sig, data):
@@ -65,7 +66,7 @@ class PosixShell(Shell):
         try:
             with NamedTemporaryFile(
                 prefix="conda-spawn-",
-                suffix=".sh",
+                suffix=self.tmp_suffix,
                 delete=False,
                 mode="w",
             ) as f:
@@ -76,7 +77,7 @@ class PosixShell(Shell):
             child.sendline(f' . "{f.name}" && PS1="{prompt}${{PS1:-}}" && stty echo')
             os.read(child.child_fd, 4096)  # consume buffer before interact
             if Path(executable).name == "zsh":
-                child.expect('\r\n')
+                child.expect("\r\n")
             if command:
                 child.sendline(shlex.join(command))
             child.interact()
@@ -86,7 +87,9 @@ class PosixShell(Shell):
 
     def script_and_prompt(self, prefix: Path) -> tuple[str, str]:
         activator = self.Activator(["activate", str(prefix)])
-        conda_default_env = os.getenv("CONDA_DEFAULT_ENV", activator._default_env(str(prefix)))
+        conda_default_env = os.getenv(
+            "CONDA_DEFAULT_ENV", activator._default_env(str(prefix))
+        )
         prompt = activator._prompt_modifier(str(prefix), conda_default_env)
         script = activator.execute()
         lines = []
@@ -96,31 +99,33 @@ class PosixShell(Shell):
             lines.append(line)
         script = "".join(lines)
         return script, prompt
-    
+
     def executable_and_args(self) -> tuple[str, list[str]]:
         # TODO: Customize which shell gets used; this below is the default!
         return os.environ.get("SHELL", "/bin/bash"), ["-l", "-i"]
-    
+
     def env(self) -> dict[str, str]:
         env = os.environ.copy()
         env["CONDA_SPAWN"] = "1"
         return env
 
+
 class CshShell(Shell):
-        def spawn(self, prefix: Path, command: Iterable[str] | None = None) -> int: ...
+    def spawn(self, prefix: Path, command: Iterable[str] | None = None) -> int: ...
 
 
 class XonshShell(Shell):
-        def spawn(self, prefix: Path, command: Iterable[str] | None = None) -> int: ...
+    def spawn(self, prefix: Path, command: Iterable[str] | None = None) -> int: ...
 
 
 class FishShell(Shell):
-        def spawn(self, prefix: Path, command: Iterable[str] | None = None) -> int: ...
+    def spawn(self, prefix: Path, command: Iterable[str] | None = None) -> int: ...
 
 
 class PowershellShell(Shell):
     Activator = activate.PowerShellActivator
     tmp_suffix = ".ps1"
+
     def spawn(self, prefix: Path, command: Iterable[str] | None = None) -> int:
         executable, args = self.executable_and_args()
         script, _ = self.script_and_prompt(prefix)
@@ -133,7 +138,7 @@ class PowershellShell(Shell):
             ) as f:
                 f.write(f"{script}\r\n")
                 if command:
-                    command = subprocess.list2cmdline(command) 
+                    command = subprocess.list2cmdline(command)
                     f.write(f"echo {command}\r\n")
                     f.write(f"{command}\r\n")
             args.append(f.name)
@@ -144,19 +149,21 @@ class PowershellShell(Shell):
 
     def script_and_prompt(self, prefix: Path) -> tuple[str, str]:
         activator = self.Activator(["activate", str(prefix)])
-        conda_default_env = os.getenv("CONDA_DEFAULT_ENV", activator._default_env(str(prefix)))
+        conda_default_env = os.getenv(
+            "CONDA_DEFAULT_ENV", activator._default_env(str(prefix))
+        )
         prompt_mod = activator._prompt_modifier(str(prefix), conda_default_env)
         script = activator.execute()
         script += (
-            '\r\n$old_prompt = $function:prompt\r\n'
+            "\r\n$old_prompt = $function:prompt\r\n"
             f'function prompt {{"{prompt_mod}$($old_prompt.Invoke())"}};'
         )
         return script, ""
-    
+
     def executable_and_args(self) -> tuple[str, list[str]]:
         # TODO: Customize which shell gets used; this below is the default!
         return "powershell", ["-NoLogo", "-NoExit", "-File"]
-    
+
     def env(self) -> dict[str, str]:
         env = os.environ.copy()
         env["CONDA_SPAWN"] = "1"
@@ -166,16 +173,19 @@ class PowershellShell(Shell):
 class CmdExeShell(PowershellShell):
     Activator = activate.CmdExeActivator
     tmp_suffix = ".bat"
+
     def script_and_prompt(self, prefix: Path) -> tuple[str, str]:
         activator = self.Activator(["activate", str(prefix)])
-        conda_default_env = os.getenv("CONDA_DEFAULT_ENV", activator._default_env(str(prefix)))
+        conda_default_env = os.getenv(
+            "CONDA_DEFAULT_ENV", activator._default_env(str(prefix))
+        )
         prompt_mod = activator._prompt_modifier(str(prefix), conda_default_env)
         script = "@ECHO OFF\r\n"
         script += activator.execute()
         script += f"\r\n@PROMPT {prompt_mod}$P$G"
         script += "@ECHO ON\r\n"
         return script, ""
-    
+
     def executable_and_args(self) -> tuple[str, list[str]]:
         # TODO: Customize which shell gets used; this below is the default!
         return "cmd", ["/K"]
