@@ -101,10 +101,10 @@ python = "3.12.*"
 dev = ["dev", "py39"]
 build = ["build"]
 docs = ["docs"]
-test-py39 = ["test", "py39"]
-test-py310 = ["test", "py310"]
-test-py311 = ["test", "py311"]
-test-py312 = ["test", "py312"]
+test-py39 = ["dev", "test", "py39"]
+test-py310 = ["dev", "test", "py310"]
+test-py311 = ["dev", "test", "py311"]
+test-py312 = ["dev", "test", "py312"]
 
 [tool.hatch.version]
 source = "vcs"
