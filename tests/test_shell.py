@@ -2,7 +2,7 @@ import signal
 import sys
 
 import pytest
-from conda_spawn.shell import PosixShell, PowershellShell
+from conda_spawn.shell import PosixShell, PowershellShell, CmdExeShell
 
 from subprocess import PIPE
 
@@ -20,7 +20,18 @@ def test_posix_shell():
 def test_powershell():
     shell = PowershellShell()
     with shell.spawn_popen(sys.prefix, stdout=PIPE, text=True) as proc:
-        out, _ = proc.communicate("env")
+        out, _ = proc.communicate("gci env:")
+        proc.kill()
+        assert not proc.poll()
+        assert "CONDA_SPAWN" in out
+        assert "CONDA_PREFIX" in out
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Powershell only tested on Windows")
+def test_cmd():
+    shell = CmdExeShell()
+    with shell.spawn_popen(sys.prefix, stdout=PIPE, text=True) as proc:
+        out, _ = proc.communicate("set")
         proc.kill()
         assert not proc.poll()
         assert "CONDA_SPAWN" in out
