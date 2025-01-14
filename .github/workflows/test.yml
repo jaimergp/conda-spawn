@@ -11,7 +11,6 @@ on:
       - "conda_spawn/**"
       - "tests/**"
       - "pyproject.toml"
-      - "pixi.toml"
 
 concurrency:
   # Concurrency group that uses the workflow name and PR number if available
@@ -30,12 +29,12 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python-version: ["38", "39", "310", "311"]
+        python-version: ["39", "310", "311", "312"]
         include:
           - os: macos-13
-            python-version: "310"
+            python-version: "39"
           - os: macos-14
-            python-version: "311"
+            python-version: "312"
     env:
       PIXI_ENV_NAME: test-py${{ matrix.python-version }}
     steps:

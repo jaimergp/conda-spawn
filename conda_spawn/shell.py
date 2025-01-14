@@ -40,7 +40,7 @@ class PosixShell(Shell):
     Activator = activate.PosixActivator
     tmp_suffix = ".sh"
 
-    def spawn(self, prefix: Path, command: Iterable[str] | None = None) -> int:
+    def spawn_tty(self, prefix: Path, command: Iterable[str] | None = None) -> pexpect.spawn:
         def _sigwinch_passthrough(sig, data):
             # NOTE: Taken verbatim from pexpect's .interact() docstring.
             # Check for buggy platforms (see pexpect.setwinsize()).
@@ -80,10 +80,14 @@ class PosixShell(Shell):
                 child.expect("\r\n")
             if command:
                 child.sendline(shlex.join(command))
-            child.interact()
+            if sys.stdin.isatty():
+                child.interact()
+            return child
         finally:
             os.unlink(f.name)
-        return child.wait()
+    
+    def spawn(self, prefix: Path, command: Iterable[str] | None = None) -> int:
+        return self.spawn_tty(prefix, command).wait()
 
     def script_and_prompt(self, prefix: Path) -> tuple[str, str]:
         activator = self.Activator(["activate", str(prefix)])
@@ -126,7 +130,7 @@ class PowershellShell(Shell):
     Activator = activate.PowerShellActivator
     tmp_suffix = ".ps1"
 
-    def spawn(self, prefix: Path, command: Iterable[str] | None = None) -> int:
+    def spawn_popen(self, prefix: Path, command: Iterable[str] | None = None, **kwargs) -> subprocess.Popen:
         executable, args = self.executable_and_args()
         script, _ = self.script_and_prompt(prefix)
         try:
@@ -141,11 +145,14 @@ class PowershellShell(Shell):
                     command = subprocess.list2cmdline(command)
                     f.write(f"echo {command}\r\n")
                     f.write(f"{command}\r\n")
-            args.append(f.name)
-            proc = subprocess.run([executable, *args], env=self.env())
-            return proc.returncode
+            return subprocess.Popen([executable, *args, f.name], env=self.env(), **kwargs)
         finally:
-            os.unlink(f.name)
+            self._tmpfile = f.name
+
+    def spawn(self, prefix: Path, command: Iterable[str] | None = None) -> int:
+        proc = self.spawn_popen(prefix, command)
+        proc.communicate()
+        return proc.wait()
 
     def script_and_prompt(self, prefix: Path) -> tuple[str, str]:
         activator = self.Activator(["activate", str(prefix)])
@@ -168,6 +175,10 @@ class PowershellShell(Shell):
         env = os.environ.copy()
         env["CONDA_SPAWN"] = "1"
         return env
+    
+    def __del__(self):
+        if getattr(self, "_tmpfile", None):
+            os.unlink(self._tmpfile)
 
 
 class CmdExeShell(PowershellShell):
@@ -180,10 +191,14 @@ class CmdExeShell(PowershellShell):
             "CONDA_DEFAULT_ENV", activator._default_env(str(prefix))
         )
         prompt_mod = activator._prompt_modifier(str(prefix), conda_default_env)
-        script = "@ECHO OFF\r\n"
-        script += activator.execute()
-        script += f"\r\n@PROMPT {prompt_mod}$P$G"
-        script += "@ECHO ON\r\n"
+        script = "\r\n".join(
+            [
+                "@ECHO OFF",
+                Path(activator.execute()).read_text(),
+                f'@SET "PROMPT={prompt_mod}$P$G"',
+                "\r\n@ECHO ON\r\n"
+            ]
+        )
         return script, ""
 
     def executable_and_args(self) -> tuple[str, list[str]]:
