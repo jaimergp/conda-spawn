@@ -13,21 +13,26 @@ source:
 build:
   # can't be noarch because we can't place EXTERNALLY-MANAGED in stdlib (first level is site-packages)
   number: 0
+  noarch: python
   script:
     - {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
 
 requirements:
   host:
-    - python
+    - python 3.9
     - pip
     - hatchling >=1.12.2
     - hatch-vcs >=0.2.0
     - importlib_resources  # [py<39]
   run:
-    - python
+    - python >=3.9
     - conda >=23.9.0
+    - pexpect
+    - shellingham
 
 test:
+  requires:
+    - python 3.9
   imports:
     - conda_spawn
     - conda_spawn.main

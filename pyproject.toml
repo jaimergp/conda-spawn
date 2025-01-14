@@ -99,7 +99,7 @@ python = "3.12.*"
 
 [tool.pixi.environments]
 dev = ["dev", "py39"]
-build = ["build"]
+build = ["dev", "build"]
 docs = ["docs"]
 test-py39 = ["dev", "test", "py39"]
 test-py310 = ["dev", "test", "py310"]
