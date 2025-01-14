@@ -11,7 +11,6 @@ source:
   git_url: ../
 
 build:
-  # can't be noarch because we can't place EXTERNALLY-MANAGED in stdlib (first level is site-packages)
   number: 0
   noarch: python
   script:
@@ -23,7 +22,6 @@ requirements:
     - pip
     - hatchling >=1.12.2
     - hatch-vcs >=0.2.0
-    - importlib_resources  # [py<39]
   run:
     - python >=3.9
     - conda >=23.9.0
@@ -37,11 +35,11 @@ test:
     - conda_spawn
     - conda_spawn.main
   commands:
-    - conda go --help
+    - conda spawn --help
 
 about:
   home: https://github.com/jaimergp/conda-spawn
   license: MIT
   license_file: LICENSE
-  summary: Better PyPI interoperability for the conda ecosystem
+  summary: Activate conda environments in new shell processes
   dev_url: https://github.com/jaimergp/conda-spawn
