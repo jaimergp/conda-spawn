@@ -145,8 +145,7 @@ class PowershellShell(Shell):
                     command = subprocess.list2cmdline(command)
                     f.write(f"echo {command}\r\n")
                     f.write(f"{command}\r\n")
-            args.append(f.name)
-            return subprocess.Popen([executable, *args], env=self.env(), **kwargs)
+            return subprocess.Popen([executable, *args, f.name], env=self.env(), **kwargs)
         finally:
             self._tmpfile = f.name
 
@@ -192,10 +191,14 @@ class CmdExeShell(PowershellShell):
             "CONDA_DEFAULT_ENV", activator._default_env(str(prefix))
         )
         prompt_mod = activator._prompt_modifier(str(prefix), conda_default_env)
-        script = "@ECHO OFF\r\n"
-        script += activator.execute()
-        script += f"\r\n@PROMPT {prompt_mod}$P$G"
-        script += "@ECHO ON\r\n"
+        script = "\r\n".join(
+            [
+                "@ECHO OFF",
+                Path(activator.execute()).read_text(),
+                f'@SET "PROMPT={prompt_mod}$P$G"',
+                "\r\n@ECHO ON\r\n"
+            ]
+        )
         return script, ""
 
     def executable_and_args(self) -> tuple[str, list[str]]:
