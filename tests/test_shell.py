@@ -18,7 +18,8 @@ def test_posix_shell():
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Powershell only tested on Windows")
 def test_powershell():
-    with PowershellShell().spawn_popen(sys.prefix, stdout=PIPE, text=True) as proc:
+    shell = PowershellShell()
+    with shell.spawn_popen(sys.prefix, stdout=PIPE, text=True) as proc:
         out, _ = proc.communicate("env")
         proc.kill()
         assert not proc.poll()

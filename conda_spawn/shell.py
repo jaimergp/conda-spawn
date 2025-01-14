@@ -178,7 +178,7 @@ class PowershellShell(Shell):
         return env
     
     def __del__(self):
-        if hasattr(self, "_tmpfile"):
+        if getattr(self, "_tmpfile", None):
             os.unlink(self._tmpfile)
 
 
