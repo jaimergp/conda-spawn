@@ -19,19 +19,19 @@ def test_posix_shell():
 @pytest.mark.skipif(sys.platform != "win32", reason="Powershell only tested on Windows")
 def test_powershell():
     shell = PowershellShell()
-    with shell.spawn_popen(sys.prefix, stdout=PIPE, text=True) as proc:
-        out, _ = proc.communicate("gci env:")
+    with shell.spawn_popen(sys.prefix, command=["ls", "env:"], stdout=PIPE, text=True) as proc:
+        out, _ = proc.communicate()
         proc.kill()
         assert not proc.poll()
-        assert "CONDA_SPAWN" in out
+        assert "CONDA_SPAWN" in out 
         assert "CONDA_PREFIX" in out
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Cmd.exe only tested on Windows")
 def test_cmd():
     shell = CmdExeShell()
-    with shell.spawn_popen(sys.prefix, stdout=PIPE, text=True) as proc:
-        out, _ = proc.communicate("set")
+    with shell.spawn_popen(sys.prefix, command=["@SET"], stdout=PIPE, text=True) as proc:
+        out, _ = proc.communicate()
         proc.kill()
         assert not proc.poll()
         assert "CONDA_SPAWN" in out
