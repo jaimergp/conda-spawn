@@ -27,7 +27,7 @@ def test_powershell():
         assert "CONDA_PREFIX" in out
 
 
-@pytest.mark.skipif(sys.platform != "win32", reason="Powershell only tested on Windows")
+@pytest.mark.skipif(sys.platform != "win32", reason="Cmd.exe only tested on Windows")
 def test_cmd():
     shell = CmdExeShell()
     with shell.spawn_popen(sys.prefix, stdout=PIPE, text=True) as proc:
