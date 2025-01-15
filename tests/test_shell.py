@@ -84,7 +84,7 @@ def test_hooks_integration_cmd(ca_certificates_env, tmp_path):
 @pytest.mark.skipif(sys.platform != "win32", reason="Powershell only tested on Windows")
 def test_hooks_integration_powershell(ca_certificates_env, tmp_path):
     hook = (
-        f"{sys.executable} -m conda spawn --hook --shell cmd -p {ca_certificates_env}"
+        f"{sys.executable} -m conda spawn --hook --shell powershell -p {ca_certificates_env}"
     )
     script = f"{hook} | Out-String | Invoke-Expression"
     script_path = tmp_path / "script-eval.ps1"
