@@ -28,4 +28,3 @@ if [ ! -f "$SRC_CONDA_SPAWN/pyproject.toml" ]; then
     echo "https://github.com/conda-incubator/conda-spawn not found! Please clone or mount to $SRC_CONDA_SPAWN"
     exit 1
 fi
-

@@ -1,1 +1,1 @@
-from conda.testing import conda_cli
+pytest_plugins = ("conda.testing.fixtures",)

@@ -18,7 +18,17 @@ def spawn(
 ) -> int:
     if shell_cls is None:
         shell_cls = detect_shell_class()
-    return shell_cls().spawn(prefix, command=command)
+    return shell_cls(prefix).spawn(command=command)
+
+
+def hook(prefix: Path, shell_cls: Shell | None = None) -> int:
+    if shell_cls is None:
+        shell_cls = detect_shell_class()
+    script = shell_cls(prefix).script()
+    prompt = shell_cls(prefix).prompt()
+    print(script)
+    print(prompt)
+    return 0
 
 
 def environment_speficier_to_path(

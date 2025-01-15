@@ -9,7 +9,7 @@ from . import cli
 def conda_subcommands():
     yield plugins.CondaSubcommand(
         name="spawn",
-        summary="activate conda environments in new shell processes",
+        summary="Activate conda environments in new shell processes.",
         action=cli.execute,
         configure_parser=cli.configure_parser,
     )

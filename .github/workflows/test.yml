@@ -51,7 +51,7 @@ jobs:
           pixi run --environment ${{ env.PIXI_ENV_NAME }} conda info
       - name: Run tests
         run: pixi run --environment ${{ env.PIXI_ENV_NAME }} test --basetemp=${{ runner.os == 'Windows' && 'D:\\temp' || runner.temp }}
-  
+
   build-conda:
     name: Build conda package (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -73,4 +73,3 @@ jobs:
           pixi run --environment build dev
       - name: Build recipe
         run: pixi run --environment build build
-  
