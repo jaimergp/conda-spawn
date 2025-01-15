@@ -67,20 +67,6 @@ def test_hooks_integration_posix(ca_certificates_env, tmp_path):
     assert str(ca_certificates_env) in out
 
 
-@pytest.mark.skipif(sys.platform != "win32", reason="Cmd.exe only tested on Windows")
-def test_hooks_integration_cmd(ca_certificates_env, tmp_path):
-    hook = (
-        f"{sys.executable} -m conda spawn --hook --shell cmd -p {ca_certificates_env}"
-    )
-    script = f"FOR /F \"tokens=*\" %%g IN ('{hook}') do @CALL %%g\r\nset"
-    script_path = tmp_path / "script-eval.bat"
-    script_path.write_text(script)
-
-    out = check_output(["cmd", "/D", "/C", script_path], text=True)
-    print(out)
-    assert str(ca_certificates_env) in out
-
-
 @pytest.mark.skipif(sys.platform != "win32", reason="Powershell only tested on Windows")
 def test_hooks_integration_powershell(ca_certificates_env, tmp_path):
     hook = (
@@ -91,5 +77,19 @@ def test_hooks_integration_powershell(ca_certificates_env, tmp_path):
     script_path.write_text(script)
 
     out = check_output(["powershell", "-NoLogo", "-File", script_path], text=True)
+    print(out)
+    assert str(ca_certificates_env) in out
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Cmd.exe only tested on Windows")
+def test_hooks_integration_cmd(ca_certificates_env, tmp_path):
+    hook = (
+        f"{sys.executable} -m conda spawn --hook --shell cmd -p {ca_certificates_env}"
+    )
+    script = f"FOR /F \"tokens=*\" %%g IN ('{hook}') do @CALL %%g\r\nset"
+    script_path = tmp_path / "script-eval.bat"
+    script_path.write_text(script)
+
+    out = check_output(["cmd", "/D", "/C", script_path], text=True)
     print(out)
     assert str(ca_certificates_env) in out
