@@ -251,6 +251,7 @@ SHELLS: dict[str, type[Shell]] = {
     "fish": FishShell,
     "posix": PosixShell,
     "powershell": PowershellShell,
+    "pwsh": PowershellShell,
     "tcsh": CshShell,
     "xonsh": XonshShell,
     "zsh": ZshShell,
