@@ -1,7 +1,5 @@
 # conda-spawn
 
-Welcome to the `conda-spawn` documentation!
-
 `conda spawn` allows you to activate conda environments in new shell processes.
 
 
@@ -15,22 +13,29 @@ We do welcome feedback on what the expected behaviour should have been if someth
 :::{grid-item-card} 🏡 Getting started
 :link: quickstart
 :link-type: doc
-New to `conda-spawn`? Start here to learn the essentials
+New to `conda spawn`? Start here to learn the essentials
+:::
+
+:::{grid-item-card} 📖 How to
+:link: howto
+:link-type: doc
+Quick guides that teach how to leverage `conda spawn`
+:::
+
+::::
+
+::::{grid} 2
+
+:::{grid-item-card} 🖥️ CLI usage
+:link: cli
+:link-type: doc
+Consult the command-line interface manual
 :::
 
 :::{grid-item-card} 💡 Motivation and vision
 :link: why
 :link-type: doc
-Read about why `conda-spawn` exists and when you should use it
-:::
-::::
-
-::::{grid} 2
-
-:::{grid-item-card} 🍱 Features
-:link: features
-:link-type: doc
-Overview of what `conda-spawn` can do for you
+Read about why `conda spawn` exists and when you should use it
 :::
 
 ::::
@@ -39,6 +44,7 @@ Overview of what `conda-spawn` can do for you
 :hidden:
 
 quickstart
+howto
+cli
 why
-features
 ```
