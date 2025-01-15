@@ -37,3 +37,13 @@ def test_cmd():
         assert not proc.poll()
         assert "CONDA_SPAWN" in out
         assert "CONDA_PREFIX" in out
+
+
+def test_hooks(conda_cli):
+    out, err, rc = conda_cli("spawn", "--hook", "-p", sys.prefix)
+    print(out)
+    print(err, file=sys.stderr)
+    assert not rc
+    assert not err
+    assert "CONDA_EXE" in out
+    assert sys.prefix in out

@@ -26,7 +26,7 @@ log = getLogger(f"conda.{__name__}")
 
 
 class Shell:
-    Activator = ...
+    Activator: activate._Activator
 
     def __init__(self, prefix: Path):
         self.prefix = prefix
