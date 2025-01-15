@@ -6,6 +6,7 @@ from conda_spawn.shell import PosixShell, PowershellShell, CmdExeShell
 
 from subprocess import PIPE
 
+
 @pytest.mark.skipif(sys.platform == "win32", reason="Pty's only available on Unix")
 def test_posix_shell():
     proc = PosixShell(sys.prefix).spawn_tty()
@@ -23,7 +24,7 @@ def test_powershell():
         out, _ = proc.communicate()
         proc.kill()
         assert not proc.poll()
-        assert "CONDA_SPAWN" in out 
+        assert "CONDA_SPAWN" in out
         assert "CONDA_PREFIX" in out
 
 

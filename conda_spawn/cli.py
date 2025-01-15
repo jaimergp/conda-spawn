@@ -57,7 +57,12 @@ def configure_parser(parser: argparse.ArgumentParser):
 
 
 def execute(args: argparse.Namespace) -> int:
-    from .main import hook, spawn, environment_speficier_to_path, shell_specifier_to_shell
+    from .main import (
+        hook,
+        spawn,
+        environment_speficier_to_path,
+        shell_specifier_to_shell,
+    )
 
     prefix = environment_speficier_to_path(args.name, args.prefix)
     shell = shell_specifier_to_shell(args.shell)

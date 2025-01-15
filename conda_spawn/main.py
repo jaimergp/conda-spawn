@@ -27,8 +27,7 @@ def hook(prefix: Path, shell_cls: Shell | None = None) -> int:
     script = shell_cls(prefix).script()
     prompt = shell_cls(prefix).prompt()
     print(script)
-    if prompt:
-        print(prompt)
+    print(prompt)
     return 0
 
 

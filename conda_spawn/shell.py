@@ -30,6 +30,8 @@ class Shell:
 
     def __init__(self, prefix: Path):
         self.prefix = prefix
+        self._prefix_str = str(prefix)
+        self._activator = self.Activator(["activate", str(self.prefix)])
 
     def spawn(self, prefix: Path) -> int:
         """
@@ -45,6 +47,12 @@ class Shell:
 
     def prompt(self) -> str:
         raise NotImplementedError
+
+    def prompt_modifier(self) -> str:
+        conda_default_env = os.getenv(
+            "CONDA_DEFAULT_ENV", self._activator._default_env(self._prefix_str)
+        )
+        return self._activator._prompt_modifier(self._prefix_str, conda_default_env)
 
     def executable(self) -> str:
         raise NotImplementedError
@@ -67,27 +75,16 @@ class PosixShell(Shell):
         return self.spawn_tty(command).wait()
 
     def script(self) -> str:
-        return self._script_and_prompt()[0]
-
-    def prompt(self) -> str:
-        return self._script_and_prompt()[1]
-
-    def _script_and_prompt(self) -> tuple[str, str]:
-        prefix_str = str(self.prefix)
-        activator = self.Activator(["activate", prefix_str])
-        conda_default_env = os.getenv(
-            "CONDA_DEFAULT_ENV", activator._default_env(prefix_str)
-        )
-        prompt_mod = activator._prompt_modifier(prefix_str, conda_default_env)
-        prompt = f'PS1="{prompt_mod}${{PS1:-}}"'
-        script = activator.execute()
+        script = self._activator.execute()
         lines = []
         for line in script.splitlines(keepends=True):
             if "PS1=" in line:
                 continue
             lines.append(line)
-        script = "".join(lines)
-        return script, prompt
+        return "".join(lines)
+
+    def prompt(self) -> str:
+        return f'PS1="{self.prompt_modifier()}${{PS1:-}}"'
 
     def executable(self):
         return os.environ.get("SHELL", self.default_shell)
@@ -107,7 +104,6 @@ class PosixShell(Shell):
             a = struct.unpack("HHHH", fcntl.ioctl(sys.stdout.fileno(), TIOCGWINSZ, s))
             child.setwinsize(a[0], a[1])
 
-        script, prompt = self._script_and_prompt()
         size = shutil.get_terminal_size()
         executable = self.executable()
 
@@ -125,14 +121,14 @@ class PosixShell(Shell):
                 delete=False,
                 mode="w",
             ) as f:
-                f.write(script)
+                f.write(self.script())
             signal.signal(signal.SIGWINCH, _sigwinch_passthrough)
             # Source the activation script. We do this in a single line for performance.
             # (It's slower to send several lines than paying the IO overhead).
             # We set the PS1 prompt outside the script because it's otherwise invisible.
             # stty echo is equivalent to `child.setecho(True)` but the latter didn't work
             # reliably across all shells and OSs.
-            child.sendline(f' . "{f.name}" && {prompt} && stty echo')
+            child.sendline(f' . "{f.name}" && {self.prompt()} && stty echo')
             os.read(child.child_fd, 4096)  # consume buffer before interact
             if Path(executable).name == "zsh":
                 # zsh also needs this for a truly silent activation
@@ -174,7 +170,6 @@ class PowershellShell(Shell):
     def spawn_popen(
         self, command: Iterable[str] | None = None, **kwargs
     ) -> subprocess.Popen:
-        script, prompt = self.script_and_prompt(self.prefix)
         try:
             with NamedTemporaryFile(
                 prefix="conda-spawn-",
@@ -182,8 +177,8 @@ class PowershellShell(Shell):
                 delete=False,
                 mode="w",
             ) as f:
-                f.write(f"{script}\r\n")
-                f.write(f"{prompt}\r\n")
+                f.write(f"{self.script()}\r\n")
+                f.write(f"{self.prompt()}\r\n")
                 if command:
                     command = subprocess.list2cmdline(command)
                     f.write(f"echo {command}\r\n")
@@ -200,24 +195,13 @@ class PowershellShell(Shell):
         return proc.wait()
 
     def script(self) -> str:
-        return self._script_and_prompt()[0]
+        return self._activator.execute()
 
     def prompt(self) -> str:
-        return self._script_and_prompt()[1]
-
-    def _script_and_prompt(self) -> tuple[str, str]:
-        prefix_str = str(self.prefix)
-        activator = self.Activator(["activate", prefix_str])
-        conda_default_env = os.getenv(
-            "CONDA_DEFAULT_ENV", activator._default_env(prefix_str)
-        )
-        prompt_mod = activator._prompt_modifier(prefix_str, conda_default_env)
-        script = activator.execute()
-        prompt = (
+        return (
             "\r\n$old_prompt = $function:prompt\r\n"
-            f'function prompt {{"{prompt_mod}$($old_prompt.Invoke())"}};'
+            f'function prompt {{"{self.prompt_modifier()}$($old_prompt.Invoke())"}};'
         )
-        return script, prompt
 
     def executable(self) -> str:
         return "powershell"
@@ -238,22 +222,17 @@ class PowershellShell(Shell):
 class CmdExeShell(PowershellShell):
     Activator = activate.CmdExeActivator
 
-    def _script_and_prompt(self) -> tuple[str, str]:
-        prefix_str = str(self.prefix)
-        activator = self.Activator(["activate", prefix_str])
-        conda_default_env = os.getenv(
-            "CONDA_DEFAULT_ENV", activator._default_env(prefix_str)
-        )
-        prompt_mod = activator._prompt_modifier(prefix_str, conda_default_env)
-        prompt = f'@SET "PROMPT={prompt_mod}$P$G"'
-        script = "\r\n".join(
+    def script(self):
+        return "\r\n".join(
             [
                 "@ECHO OFF",
-                Path(activator.execute()).read_text(),
-                "\r\n@ECHO ON\r\n",
+                Path(self._activator.execute()).read_text(),
+                "@ECHO ON",
             ]
         )
-        return script, prompt
+
+    def _script_and_prompt(self) -> tuple[str, str]:
+        return f'@SET "PROMPT={self.prompt_modifier()}$P$G"'
 
     def executable(self) -> str:
         return "cmd"

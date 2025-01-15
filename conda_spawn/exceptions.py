@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 from conda.base.constants import COMPATIBLE_SHELLS
 from conda.common.io import dashlist
@@ -14,4 +13,3 @@ class ShellNotSupported(CondaError):
             f"{dashlist(COMPATIBLE_SHELLS)}"
         )
         super().__init__(message)
-
