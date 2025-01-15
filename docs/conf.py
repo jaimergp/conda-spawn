@@ -26,6 +26,7 @@ extensions = [
     "sphinx_design",
     "sphinx_copybutton",
     "sphinx_reredirects",
+    "sphinxcontrib.programoutput",
 ]
 
 myst_heading_anchors = 3
