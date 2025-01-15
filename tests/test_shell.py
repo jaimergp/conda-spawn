@@ -49,41 +49,47 @@ def test_hooks(conda_cli):
     assert sys.prefix in out
 
 
-def test_hooks_integration(conda_cli, tmp_env, tmp_path):
-    on_win = sys.platform == "win32"
-    with tmp_env("ca-certificates") as prefix:
-        script_paths = []
+@pytest.fixture(scope="session")
+def ca_certificates_env(session_tmp_env):
+    with session_tmp_env("ca-certificates", "--quiet") as prefix:
+        yield prefix
 
-        # Method 1 - copy pasted
-        out, err, rc = conda_cli("spawn", "--hook", "-p", prefix)
-        if on_win:
-            script = f"{out}\r\nset"
-            ext = ".bat"
-        else:
-            script = f"{out}\nenv | sort"
-            ext = "sh"
-        script_path = tmp_path / f"script-pasted.{ext}"
-        script_path.write_text(script)
-        script_paths.append(script_path)
 
-        # Method 2 - eval equivalents
-        if on_win:
-            hook = f"{sys.executable} -m conda spawn --hook --shell cmd -p {prefix}"
-            script = f"FOR /F \"tokens=*\" %%g IN ('{hook}') do @CALL %%g\r\nset"
-            ext = ".bat"
-        else:
-            hook = f"{sys.executable} -m conda spawn --hook --shell posix -p '{prefix}'"
-            script = f'eval "$({hook})"\nenv | sort'
-            ext = "sh"
-        script_path = tmp_path / f"script-eval.{ext}"
-        script_path.write_text(script)
-        script_paths.append(script_path)
+@pytest.mark.skipif(sys.platform == "win32", reason="Only tested on Unix")
+def test_hooks_integration_posix(ca_certificates_env, tmp_path):
+    hook = f"{sys.executable} -m conda spawn --hook --shell posix -p '{ca_certificates_env}'"
+    script = f'eval "$({hook})"\nenv | sort'
+    script_path = tmp_path / "script-eval.sh"
+    script_path.write_text(script)
 
-        for script_path in script_paths:
-            print(script_path)
-            if on_win:
-                out = check_output(["cmd", "/D", "/C", script_path], text=True)
-            else:
-                out = check_output(["bash", script_path], text=True)
-            print(out)
-            assert str(prefix) in out
+    out = check_output(["bash", script_path], text=True)
+    print(out)
+    assert str(ca_certificates_env) in out
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Cmd.exe only tested on Windows")
+def test_hooks_integration_cmd(ca_certificates_env, tmp_path):
+    hook = (
+        f"{sys.executable} -m conda spawn --hook --shell cmd -p {ca_certificates_env}"
+    )
+    script = f"FOR /F \"tokens=*\" %%g IN ('{hook}') do @CALL %%g\r\nset"
+    script_path = tmp_path / "script-eval.bat"
+    script_path.write_text(script)
+
+    out = check_output(["cmd", "/D", "/C", script_path], text=True)
+    print(out)
+    assert str(ca_certificates_env) in out
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Powershell only tested on Windows")
+def test_hooks_integration_powershell(ca_certificates_env, tmp_path):
+    hook = (
+        f"{sys.executable} -m conda spawn --hook --shell cmd -p {ca_certificates_env}"
+    )
+    script = f"{hook} | Out-String | Invoke-Expression"
+    script_path = tmp_path / "script-eval.ps1"
+    script_path.write_text(script)
+
+    out = check_output(["powershell", "-NoLogo", "-File", script_path], text=True)
+    print(out)
+    assert str(ca_certificates_env) in out
