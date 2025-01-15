@@ -24,7 +24,6 @@ def test_posix_shell(simple_env):
     assert str(simple_env) in out
 
 
-
 @pytest.mark.skipif(sys.platform != "win32", reason="Powershell only tested on Windows")
 def test_powershell(simple_env):
     shell = PowershellShell(simple_env)

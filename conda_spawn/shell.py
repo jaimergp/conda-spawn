@@ -65,7 +65,7 @@ class Shell:
         env = os.environ.copy()
         env["CONDA_SPAWN"] = "1"
         return env
-    
+
     def __del__(self):
         for path in self._files_to_remove:
             try:
