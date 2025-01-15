@@ -6,10 +6,12 @@ from conda_spawn.shell import PosixShell, PowershellShell, CmdExeShell
 
 from subprocess import PIPE, check_output
 
+
 @pytest.fixture(scope="session")
 def simple_env(session_tmp_env):
     with session_tmp_env("ca-certificates", "--quiet") as prefix:
         yield prefix
+
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Pty's only available on Unix")
 def test_posix_shell(simple_env):
@@ -81,9 +83,7 @@ def test_hooks_integration_powershell(simple_env, tmp_path):
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Cmd.exe only tested on Windows")
 def test_hooks_integration_cmd(simple_env, tmp_path):
-    hook = (
-        f"{sys.executable} -m conda spawn --hook --shell cmd -p {simple_env}"
-    )
+    hook = f"{sys.executable} -m conda spawn --hook --shell cmd -p {simple_env}"
     script = f"FOR /F \"tokens=*\" %%g IN ('{hook}') do @CALL %%g\r\nset"
     script_path = tmp_path / "script-eval.bat"
     script_path.write_text(script)
