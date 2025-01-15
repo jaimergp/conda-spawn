@@ -1,3 +1,1 @@
-pytest_plugins = (
-    "conda.testing.fixtures",
-)
+pytest_plugins = ("conda.testing.fixtures",)

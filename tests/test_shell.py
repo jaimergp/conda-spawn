@@ -69,7 +69,7 @@ def test_hooks_integration(conda_cli, tmp_env, tmp_path):
         # Method 2 - eval equivalents
         if on_win:
             hook = f"{sys.executable} -m conda spawn --hook --shell cmd -p {prefix}"
-            script = f'FOR /F "tokens=*" %%g IN (\'{hook}\') do @CALL %%g\r\nset'
+            script = f"FOR /F \"tokens=*\" %%g IN ('{hook}') do @CALL %%g\r\nset"
             ext = ".bat"
         else:
             hook = f"{sys.executable} -m conda spawn --hook --shell posix -p '{prefix}'"
