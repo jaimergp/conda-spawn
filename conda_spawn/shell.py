@@ -197,8 +197,8 @@ class PowershellShell(Shell):
         finally:
             self._files_to_remove.append(f.name)
 
-    def spawn(self, prefix: Path, command: Iterable[str] | None = None) -> int:
-        proc = self.spawn_popen(prefix, command)
+    def spawn(self, command: Iterable[str] | None = None) -> int:
+        proc = self.spawn_popen(command)
         proc.communicate()
         return proc.wait()
 
@@ -235,7 +235,7 @@ class CmdExeShell(PowershellShell):
             ]
         )
 
-    def _script_and_prompt(self) -> tuple[str, str]:
+    def prompt(self) -> str:
         return f'@SET "PROMPT={self.prompt_modifier()}$P$G"'
 
     def executable(self) -> str:
