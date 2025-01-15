@@ -73,4 +73,3 @@ jobs:
           pixi run --environment build dev
       - name: Build recipe
         run: pixi run --environment build build
-
