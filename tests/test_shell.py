@@ -1,4 +1,3 @@
-import signal
 import sys
 
 import pytest
@@ -9,25 +8,28 @@ from subprocess import PIPE, check_output
 
 @pytest.fixture(scope="session")
 def simple_env(session_tmp_env):
-    with session_tmp_env("ca-certificates", "--quiet") as prefix:
+    with session_tmp_env() as prefix:
         yield prefix
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Pty's only available on Unix")
 def test_posix_shell(simple_env):
-    proc = PosixShell(simple_env).spawn_tty()
+    shell = PosixShell(simple_env)
+    proc = shell.spawn_tty()
     proc.sendline("env")
-    proc.expect("CONDA_SPAWN")
-    proc.sendline("echo $CONDA_PREFIX")
-    proc.expect(str(simple_env))
-    proc.kill(signal.SIGINT)
+    proc.sendeof()
+    out = proc.read().decode()
+    assert "CONDA_SPAWN" in out
+    assert "CONDA_PREFIX" in out
+    assert str(simple_env) in out
+
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Powershell only tested on Windows")
 def test_powershell(simple_env):
     shell = PowershellShell(simple_env)
     with shell.spawn_popen(command=["ls", "env:"], stdout=PIPE, text=True) as proc:
-        out, _ = proc.communicate()
+        out, _ = proc.communicate(timeout=5)
         proc.kill()
         assert not proc.poll()
         assert "CONDA_SPAWN" in out
@@ -39,7 +41,7 @@ def test_powershell(simple_env):
 def test_cmd(simple_env):
     shell = CmdExeShell(simple_env)
     with shell.spawn_popen(command=["@SET"], stdout=PIPE, text=True) as proc:
-        out, _ = proc.communicate()
+        out, _ = proc.communicate(timeout=5)
         proc.kill()
         assert not proc.poll()
         assert "CONDA_SPAWN" in out

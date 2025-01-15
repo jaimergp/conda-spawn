@@ -32,6 +32,7 @@ class Shell:
         self.prefix = prefix
         self._prefix_str = str(prefix)
         self._activator = self.Activator(["activate", str(self.prefix)])
+        self._files_to_remove = []
 
     def spawn(self, prefix: Path) -> int:
         """
@@ -64,6 +65,13 @@ class Shell:
         env = os.environ.copy()
         env["CONDA_SPAWN"] = "1"
         return env
+    
+    def __del__(self):
+        for path in self._files_to_remove:
+            try:
+                os.unlink(path)
+            except OSError as exc:
+                log.debug("Could not delete %s", path, exc_info=exc)
 
 
 class PosixShell(Shell):
@@ -139,7 +147,7 @@ class PosixShell(Shell):
                 child.interact()
             return child
         finally:
-            os.unlink(f.name)
+            self._files_to_remove.append(f.name)
 
 
 class BashShell(PosixShell):
@@ -187,7 +195,7 @@ class PowershellShell(Shell):
                 [self.executable(), *self.args(), f.name], env=self.env(), **kwargs
             )
         finally:
-            self._tmpfile = f.name
+            self._files_to_remove.append(f.name)
 
     def spawn(self, prefix: Path, command: Iterable[str] | None = None) -> int:
         proc = self.spawn_popen(prefix, command)
@@ -213,10 +221,6 @@ class PowershellShell(Shell):
         env = os.environ.copy()
         env["CONDA_SPAWN"] = "1"
         return env
-
-    def __del__(self):
-        if getattr(self, "_tmpfile", None):
-            os.unlink(self._tmpfile)
 
 
 class CmdExeShell(PowershellShell):
