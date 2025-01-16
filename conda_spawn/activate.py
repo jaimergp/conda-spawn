@@ -365,6 +365,7 @@ class _Activator(metaclass=abc.ABCMeta):
 
         if old_conda_shlvl == 0:
             export_vars, unset_vars = self.get_export_unset_vars(
+                export_metavars=False,  # JRG: No need for CONDA_EXE and friends
                 path=self.pathsep_join(self._add_prefix_to_path(prefix)),
                 conda_prefix=prefix,
                 conda_shlvl=conda_shlvl,
@@ -375,6 +376,7 @@ class _Activator(metaclass=abc.ABCMeta):
             deactivate_scripts = ()
         elif stack:
             export_vars, unset_vars = self.get_export_unset_vars(
+                export_metavars=False,  # JRG: No need for CONDA_EXE and friends
                 path=self.pathsep_join(self._add_prefix_to_path(prefix)),
                 conda_prefix=prefix,
                 conda_shlvl=conda_shlvl,
@@ -389,6 +391,7 @@ class _Activator(metaclass=abc.ABCMeta):
             deactivate_scripts = ()
         else:
             export_vars, unset_vars = self.get_export_unset_vars(
+                export_metavars=False,  # JRG: No need for CONDA_EXE and friends
                 path=self.pathsep_join(
                     self._replace_prefix_in_path(old_conda_prefix, prefix)
                 ),
