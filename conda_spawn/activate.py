@@ -13,6 +13,8 @@ JRG(2025-01-16): Vendored from conda/conda:c61de5e33ee0c0a36d with following cha
 - Updated import paths to refer to `conda.*`
 - Remove deprecated symbols and arguments
 - conda.auxlib.compat.Utf8NamedTemporaryFile -> NamedTemporaryFile
+- Ensure _Activator._add_prefix_to_path() ALWAYS includes $CONDA_ROOT/condabin FIRST, via
+  a new method _Activator._ensure_root_condabin_is_first()
 """
 
 from __future__ import annotations
@@ -608,6 +610,13 @@ class _Activator(metaclass=abc.ABCMeta):
         else:
             yield self.sep.join((prefix, "bin"))
 
+    def _ensure_root_condabin_is_first(self, path_list):
+        condabin_dir = self.path_conversion(join(context.conda_prefix, "condabin"))
+        if condabin_dir in path_list:
+            path_list.remove(condabin_dir)
+        path_list.insert(0, condabin_dir)
+        return path_list
+
     def _add_prefix_to_path(self, prefix, starting_path_dirs=None):
         prefix = self.path_conversion(prefix)
         if starting_path_dirs is None:
@@ -615,16 +624,26 @@ class _Activator(metaclass=abc.ABCMeta):
         else:
             path_list = list(self.path_conversion(starting_path_dirs))
 
-        # If this is the first time we're activating an environment, we need to ensure that
-        # the condabin directory is included in the path list.
-        # Under normal conditions, if the shell hook is working correctly, this should
-        # never trigger.
-        old_conda_shlvl = int(os.getenv("CONDA_SHLVL", "").strip() or 0)
-        if not old_conda_shlvl and not any(p.endswith("condabin") for p in path_list):
-            condabin_dir = self.path_conversion(join(context.conda_prefix, "condabin"))
-            path_list.insert(0, condabin_dir)
+        # JRG: We will not have a 'conda' shell function with highest precedence, so
+        # we need to make sure we have $CONDA_ROOT/condabin FIRST at all times.
+        # This was the old logic, depending on CONDA_SHLVL, now disabled.
+        # We ensure condabin a bit below.
+        #
+        # # If this is the first time we're activating an environment, we need to ensure that
+        # # the condabin directory is included in the path list.
+        # # Under normal conditions, if the shell hook is working correctly, this should
+        # # never trigger.
+        # old_conda_shlvl = int(os.getenv("CONDA_SHLVL", "").strip() or 0)
+        # if not old_conda_shlvl and not any(p.endswith("condabin") for p in path_list):
+        #     condabin_dir = self.path_conversion(join(context.conda_prefix, "condabin"))
+        #     path_list.insert(0, condabin_dir)
 
         path_list[0:0] = list(self.path_conversion(self._get_path_dirs(prefix)))
+
+        # JRG: Always place this AFTER line above to avoid a 'conda' executable coming
+        # from a non-base env shadow the base env 'conda'.
+        self._ensure_root_condabin_is_first(path_list)
+
         return tuple(path_list)
 
     def _remove_prefix_from_path(self, prefix, starting_path_dirs=None):
