@@ -7,6 +7,10 @@ Implementation for all shell interface logic exposed via
 parser, an abstract shell class, and special path handling for Windows.
 
 See conda.cli.main.main_sourced for the entry point into this module.
+
+JRG: Vendored from conda/conda:c61de5e33ee0c0a36d06db238965a41a01eaabc0 with following changes:
+
+- Remove JSON Mixin logic (JSONFormatMixin, formatter_map, _build_activator_cls)
 """
 
 from __future__ import annotations
@@ -1157,83 +1161,6 @@ class PowerShellActivator(_Activator):
         return "Remove-Variable CondaModuleArgs"
 
 
-class JSONFormatMixin(_Activator):
-    """Returns the necessary values for activation as JSON, so that tools can use them."""
-
-    pathsep_join = list
-    tempfile_extension = None  # output to stdout
-    command_join = list
-
-    def _hook_preamble(self):
-        if context.dev:
-            return {
-                "PYTHONPATH": CONDA_SOURCE_ROOT,
-                "CONDA_EXE": sys.executable,
-                "_CE_M": "-m",
-                "_CE_CONDA": "conda",
-                "_CONDA_ROOT": CONDA_PACKAGE_ROOT,
-                "_CONDA_EXE": context.conda_exe,
-            }
-        else:
-            return {
-                "CONDA_EXE": context.conda_exe,
-                "_CE_M": "",
-                "_CE_CONDA": "",
-                "_CONDA_ROOT": context.conda_prefix,
-                "_CONDA_EXE": context.conda_exe,
-            }
-
-    @deprecated(
-        "24.9",
-        "25.3",
-        addendum="Use `conda.activate._Activator.get_export_unset_vars` instead.",
-    )
-    def get_scripts_export_unset_vars(self, **kwargs):
-        export_vars, unset_vars = self.get_export_unset_vars(**kwargs)
-        return export_vars or {}, unset_vars or []
-
-    def _finalize(self, commands, ext):
-        merged = {}
-        for _cmds in commands:
-            merged.update(_cmds)
-
-        commands = merged
-        if ext is None:
-            return json.dumps(commands, indent=2)
-        elif ext:
-            with Utf8NamedTemporaryFile("w+", suffix=ext, delete=False) as tf:
-                # the default mode is 'w+b', and universal new lines don't work in that mode
-                # command_join should account for that
-                json.dump(commands, tf, indent=2)
-            return tf.name
-        else:
-            raise NotImplementedError()
-
-    def _yield_commands(self, cmds_dict):
-        # TODO: _Is_ defining our own object shape here any better than
-        # just dumping the `cmds_dict`?
-        path = cmds_dict.get("export_path", {})
-        export_vars = cmds_dict.get("export_vars", {})
-        # treat PATH specially
-        if "PATH" in export_vars:
-            new_path = path.get("PATH", [])
-            new_path.extend(export_vars.pop("PATH"))
-            path["PATH"] = new_path
-
-        yield {
-            "path": path,
-            "vars": {
-                "export": export_vars,
-                "unset": cmds_dict.get("unset_vars", ()),
-                "set": cmds_dict.get("set_vars", {}),
-            },
-            "scripts": {
-                "activate": cmds_dict.get("activate_scripts", ()),
-                "deactivate": cmds_dict.get("deactivate_scripts", ()),
-            },
-        }
-
-
 activator_map: dict[str, type[_Activator]] = {
     "posix": PosixActivator,
     "ash": PosixActivator,
@@ -1247,25 +1174,3 @@ activator_map: dict[str, type[_Activator]] = {
     "fish": FishActivator,
     "powershell": PowerShellActivator,
 }
-
-formatter_map = {
-    "json": JSONFormatMixin,
-}
-
-
-def _build_activator_cls(shell):
-    """Dynamically construct the activator class.
-
-    Detect the base activator and any number of formatters (appended using '+' to the base name).
-    For example, `posix+json` (as in `conda shell.posix+json activate`) would use the
-    `PosixActivator` base class and add the `JSONFormatMixin`.
-    """
-    shell_etc = shell.split("+")
-    activator, formatters = shell_etc[0], shell_etc[1:]
-
-    bases = [activator_map[activator]]
-    for f in formatters:
-        bases.append(formatter_map[f])
-
-    cls = type("Activator", tuple(reversed(bases)), {})
-    return cls
