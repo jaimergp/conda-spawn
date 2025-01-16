@@ -138,3 +138,6 @@ src/
 
 # hatch-vcs
 conda_spawn/_version.py
+
+# vscode
+.vscode/
