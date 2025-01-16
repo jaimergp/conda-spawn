@@ -19,7 +19,8 @@ if sys.platform != "win32":
     import pexpect
 
 import shellingham
-from conda import activate
+
+from . import activate
 
 
 log = getLogger(f"conda.{__name__}")
