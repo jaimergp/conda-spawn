@@ -8,8 +8,7 @@ parser, an abstract shell class, and special path handling for Windows.
 
 See conda.cli.main.main_sourced for the entry point into this module.
 
-JRG: Vendored from conda/conda:c61de5e33ee0c0a36d06db238965a41a01eaabc0 with following changes:
-
+JRG(2025-01-16): Vendored from conda/conda:c61de5e33ee0c0a36d with following changes:
 - Remove JSON Mixin logic (JSONFormatMixin, formatter_map, _build_activator_cls)
 - Updated import paths to refer to `conda.*`
 - Remove deprecated symbols and arguments
@@ -41,17 +40,17 @@ from typing import TYPE_CHECKING
 
 # Since we have to have configuration context here, anything imported by
 #   conda.base.context is fair game, but nothing more.
-from . import CONDA_PACKAGE_ROOT, CONDA_SOURCE_ROOT
-from .base.constants import (
+from conda import CONDA_PACKAGE_ROOT, CONDA_SOURCE_ROOT
+from conda.base.constants import (
     CONDA_ENV_VARS_UNSET_VAR,
     PACKAGE_ENV_VARS_DIR,
     PREFIX_STATE_FILE,
 )
-from .base.context import ROOT_ENV_NAME, context, locate_prefix_by_name
-from .common.compat import on_win
-from .common.path import paths_equal, unix_path_to_win, win_path_to_unix
-from .common.path import path_identity as _path_identity
-from .exceptions import ActivateHelp, ArgumentError, DeactivateHelp, GenericHelp
+from conda.base.context import ROOT_ENV_NAME, context, locate_prefix_by_name
+from conda.common.compat import on_win
+from conda.common.path import paths_equal, unix_path_to_win, win_path_to_unix
+from conda.common.path import path_identity as _path_identity
+from conda.exceptions import ActivateHelp, ArgumentError, DeactivateHelp, GenericHelp
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -220,7 +219,6 @@ class _Activator(metaclass=abc.ABCMeta):
         response = getattr(self, self.command)()
         context.plugin_manager.invoke_post_commands(self.command)
         return response
-
 
     @abc.abstractmethod
     def _hook_preamble(self) -> str | None:
