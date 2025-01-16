@@ -141,7 +141,6 @@ def test_condabin_first_powershell(simple_env, conda_env):
         proc.kill()
         assert not proc.poll()
         assert out.find(f"{sys.prefix}\\condabin\\conda") < out.find(str(conda_env))
-        assert str(conda_env) not in out
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Cmd.exe only tested on Windows")
