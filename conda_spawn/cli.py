@@ -41,6 +41,12 @@ def configure_parser(parser: argparse.ArgumentParser):
         choices=SHELLS,
         help="Shell to use for the new session. If not specified, autodetect shell in use.",
     )
+    shell_group.add_argument(
+        "--stack",
+        action="store_true",
+        help="Whether to stack the newly spawned environment."
+        "The default is to spawn a new session with replaced state.",
+    )
 
     parser.prog = "conda spawn"
     parser.epilog = dedent(
@@ -69,5 +75,5 @@ def execute(args: argparse.Namespace) -> int:
     if args.hook:
         if args.command:
             raise ArgumentError("COMMAND cannot be provided with --hook.")
-        return hook(prefix, shell)
-    return spawn(prefix, shell, command=args.command)
+        return hook(prefix, shell, stack=args.stack)
+    return spawn(prefix, shell, stack=args.stack, command=args.command)
