@@ -11,6 +11,8 @@ See conda.cli.main.main_sourced for the entry point into this module.
 JRG: Vendored from conda/conda:c61de5e33ee0c0a36d06db238965a41a01eaabc0 with following changes:
 
 - Remove JSON Mixin logic (JSONFormatMixin, formatter_map, _build_activator_cls)
+- Updated import paths to refer to `conda.*`
+- Remove deprecated symbols and arguments
 """
 
 from __future__ import annotations
@@ -46,9 +48,8 @@ from .base.constants import (
 )
 from .base.context import ROOT_ENV_NAME, context, locate_prefix_by_name
 from .common.compat import on_win
-from .common.path import _cygpath, paths_equal, unix_path_to_win, win_path_to_unix
+from .common.path import paths_equal, unix_path_to_win, win_path_to_unix
 from .common.path import path_identity as _path_identity
-from .deprecations import deprecated
 from .exceptions import ActivateHelp, ArgumentError, DeactivateHelp, GenericHelp
 
 if TYPE_CHECKING:
@@ -160,30 +161,6 @@ class _Activator(metaclass=abc.ABCMeta):
 
         return export_vars, unset_vars
 
-    @deprecated(
-        "24.9",
-        "25.3",
-        addendum="Use `conda.activate._Activator.get_export_unset_vars` instead.",
-    )
-    def add_export_unset_vars(self, export_vars, unset_vars, **kwargs):
-        new_export_vars, new_unset_vars = self.get_export_unset_vars(**kwargs)
-        return {
-            {**(export_vars or {}), **new_export_vars},
-            [*(unset_vars or []), *new_unset_vars],
-        }
-
-    @deprecated("24.9", "25.3", addendum="For testing only. Moved to test suite.")
-    def get_scripts_export_unset_vars(self, **kwargs) -> tuple[str, str]:
-        export_vars, unset_vars = self.get_export_unset_vars(**kwargs)
-        return (
-            self.command_join.join(
-                self.export_var_tmpl % (k, v) for k, v in (export_vars or {}).items()
-            ),
-            self.command_join.join(
-                self.unset_var_tmpl % (k) for k in (unset_vars or [])
-            ),
-        )
-
     def _finalize(self, commands, ext):
         commands = (*commands, "")  # add terminating newline
         if ext is None:
@@ -243,34 +220,6 @@ class _Activator(metaclass=abc.ABCMeta):
         context.plugin_manager.invoke_post_commands(self.command)
         return response
 
-    @deprecated(
-        "25.3",
-        "25.9",
-        addendum="Use `conda commands` instead.",
-        # these commands are already pretty hidden in their implementation and access (`conda shell.posix commands`)
-        # so we opt to not warn end users that this is going away, we only need to notify tab-completion devs
-        # deprecation_type=FutureWarning,
-    )
-    def commands(self):
-        """
-        Returns a list of possible subcommands that are valid
-        immediately following `conda` at the command line.
-        This method is generally only used by tab-completion.
-        """
-        # Import locally to reduce impact on initialization time.
-        from .cli.conda_argparse import find_builtin_commands, generate_parser
-        from .cli.find_commands import find_commands
-
-        # return value meant to be written to stdout
-        # Hidden commands to provide metadata to shells.
-        return "\n".join(
-            sorted(
-                {
-                    *find_builtin_commands(generate_parser()),
-                    *find_commands(True),
-                }
-            )
-        )
 
     @abc.abstractmethod
     def _hook_preamble(self) -> str | None:
@@ -280,7 +229,6 @@ class _Activator(metaclass=abc.ABCMeta):
     def _hook_postamble(self) -> str | None:
         return None
 
-    @deprecated.argument("25.3", "25.9", "arguments")
     def _parse_and_set_args(self) -> None:
         command, *arguments = self._raw_arguments or [None]
         help_flags = ("-h", "--help", "/?")
@@ -618,7 +566,6 @@ class _Activator(metaclass=abc.ABCMeta):
         path_split = path.split(os.pathsep)
         return path_split
 
-    @deprecated.argument("24.9", "25.3", "extra_library_bin")
     def _get_path_dirs(self, prefix):
         if on_win:  # pragma: unix no cover
             yield prefix.rstrip(self.sep)
@@ -848,58 +795,6 @@ class _Activator(metaclass=abc.ABCMeta):
 
 def expand(path):
     return abspath(expanduser(expandvars(path)))
-
-
-@deprecated("25.3", "25.9", addendum="Use `conda.common.compat.ensure_binary` instead.")
-def ensure_binary(value):
-    try:
-        return value.encode("utf-8")
-    except AttributeError:  # pragma: no cover
-        # AttributeError: '<>' object has no attribute 'encode'
-        # In this case assume already binary type and do nothing
-        return value
-
-
-@deprecated("25.3", "25.9")
-def ensure_fs_path_encoding(value):
-    from .common.compat import FILESYSTEM_ENCODING
-
-    try:
-        return value.decode(FILESYSTEM_ENCODING)
-    except AttributeError:
-        return value
-
-
-deprecated.constant(
-    "25.3",
-    "25.9",
-    "_Cygpath",
-    _cygpath,
-    addendum="Use `conda.common.path._cygpath` instead.",
-)
-del _cygpath
-
-deprecated.constant(
-    "25.3",
-    "25.9",
-    "native_path_to_unix",
-    win_path_to_unix,
-    addendum="Use `conda.common.path.win_path_to_unix` instead.",
-)
-deprecated.constant(
-    "25.3",
-    "25.9",
-    "unix_path_to_native",
-    unix_path_to_win,
-    addendum="Use `conda.common.path.unix_path_to_win` instead.",
-)
-deprecated.constant(
-    "25.3",
-    "25.9",
-    "path_identity",
-    _path_identity,
-    addendum="Use `conda.common.path.path_identity` instead.",
-)
 
 
 def backslash_to_forwardslash(
