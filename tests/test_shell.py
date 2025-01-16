@@ -140,7 +140,7 @@ def test_condabin_first_powershell(simple_env, conda_env):
         out, _ = proc.communicate(timeout=5)
         proc.kill()
         assert not proc.poll()
-        assert out.find(f"{sys.prefix}\\condabin\\conda") < out.find(str(conda_env))
+        assert out.index(f"{sys.prefix}\\condabin\\conda") < out.index(str(conda_env))
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Cmd.exe only tested on Windows")
@@ -161,4 +161,4 @@ def test_condabin_first_cmd(simple_env, conda_env):
         out, _ = proc.communicate(timeout=5)
         proc.kill()
         assert not proc.poll()
-        assert out.find(f"{sys.prefix}\\condabin\\conda") < out.find(str(conda_env))
+        assert out.index(f"{sys.prefix}\\condabin\\conda") < out.index(str(conda_env))
