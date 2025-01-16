@@ -11,6 +11,7 @@ def simple_env(session_tmp_env):
     with session_tmp_env() as prefix:
         yield prefix
 
+
 @pytest.fixture(scope="session")
 def conda_env(session_tmp_env):
     with session_tmp_env("conda") as prefix:
@@ -112,7 +113,7 @@ def test_condabin_first_posix_shell(simple_env, conda_env):
 
     shell = PosixShell(conda_env)
     proc = shell.spawn_tty()
-    proc.sendline('which conda')
+    proc.sendline("which conda")
     proc.sendeof()
     out = proc.read().decode()
     assert f"{sys.prefix}/condabin/conda" in out
@@ -122,7 +123,9 @@ def test_condabin_first_posix_shell(simple_env, conda_env):
 @pytest.mark.skipif(sys.platform != "win32", reason="Powershell only tested on Windows")
 def test_condabin_first_powershell(simple_env, conda_env):
     shell = PowershellShell(simple_env)
-    with shell.spawn_popen(command=["echo", "$env:PATH"], stdout=PIPE, text=True) as proc:
+    with shell.spawn_popen(
+        command=["echo", "$env:PATH"], stdout=PIPE, text=True
+    ) as proc:
         out, _ = proc.communicate(timeout=5)
         proc.kill()
         assert not proc.poll()
@@ -131,7 +134,9 @@ def test_condabin_first_powershell(simple_env, conda_env):
         assert out.index(sys.prefix) < out.index(str(simple_env))
 
     shell = PowershellShell(conda_env)
-    with shell.spawn_popen(command=["where.exe", "conda"], stdout=PIPE, text=True) as proc:
+    with shell.spawn_popen(
+        command=["where.exe", "conda"], stdout=PIPE, text=True
+    ) as proc:
         out, _ = proc.communicate(timeout=5)
         proc.kill()
         assert not proc.poll()
@@ -151,7 +156,9 @@ def test_condabin_first_cmd(simple_env, conda_env):
         assert out.index(sys.prefix) < out.index(str(simple_env))
 
     shell = CmdExeShell(conda_env)
-    with shell.spawn_popen(command=["where.exe", "conda"], stdout=PIPE, text=True) as proc:
+    with shell.spawn_popen(
+        command=["where.exe", "conda"], stdout=PIPE, text=True
+    ) as proc:
         out, _ = proc.communicate(timeout=5)
         proc.kill()
         assert not proc.poll()
