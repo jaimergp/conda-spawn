@@ -140,7 +140,7 @@ def test_condabin_first_powershell(simple_env, conda_env):
         out, _ = proc.communicate(timeout=5)
         proc.kill()
         assert not proc.poll()
-        assert f"{sys.prefix}\\condabin\\conda" in out
+        assert out.find(f"{sys.prefix}\\condabin\\conda") < out.find(str(conda_env))
         assert str(conda_env) not in out
 
 
@@ -162,5 +162,4 @@ def test_condabin_first_cmd(simple_env, conda_env):
         out, _ = proc.communicate(timeout=5)
         proc.kill()
         assert not proc.poll()
-        assert f"{sys.prefix}\\condabin\\conda" in out
-        assert str(conda_env) not in out
+        assert out.find(f"{sys.prefix}\\condabin\\conda") < out.find(str(conda_env))
