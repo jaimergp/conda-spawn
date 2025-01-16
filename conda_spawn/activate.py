@@ -13,6 +13,7 @@ JRG: Vendored from conda/conda:c61de5e33ee0c0a36d06db238965a41a01eaabc0 with fol
 - Remove JSON Mixin logic (JSONFormatMixin, formatter_map, _build_activator_cls)
 - Updated import paths to refer to `conda.*`
 - Remove deprecated symbols and arguments
+- conda.auxlib.compat.Utf8NamedTemporaryFile -> NamedTemporaryFile
 """
 
 from __future__ import annotations
@@ -34,13 +35,13 @@ from os.path import (
     join,
 )
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from textwrap import dedent
 from typing import TYPE_CHECKING
 
 # Since we have to have configuration context here, anything imported by
 #   conda.base.context is fair game, but nothing more.
 from . import CONDA_PACKAGE_ROOT, CONDA_SOURCE_ROOT
-from .auxlib.compat import Utf8NamedTemporaryFile
 from .base.constants import (
     CONDA_ENV_VARS_UNSET_VAR,
     PACKAGE_ENV_VARS_DIR,
@@ -166,7 +167,7 @@ class _Activator(metaclass=abc.ABCMeta):
         if ext is None:
             return self.command_join.join(commands)
         elif ext:
-            with Utf8NamedTemporaryFile("w+", suffix=ext, delete=False) as tf:
+            with NamedTemporaryFile("w+", suffix=ext, delete=False) as tf:
                 # the default mode is 'w+b', and universal new lines don't work in that mode
                 # command_join should account for that
                 tf.write(self.command_join.join(commands))
