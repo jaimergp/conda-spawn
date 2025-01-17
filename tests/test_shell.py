@@ -8,7 +8,6 @@ from conda.base.context import reset_context
 from conda_spawn.shell import PosixShell, PowershellShell, CmdExeShell
 
 
-
 @pytest.fixture(scope="session")
 def simple_env(session_tmp_env):
     with session_tmp_env() as prefix:
