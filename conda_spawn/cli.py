@@ -82,7 +82,11 @@ def execute(args: argparse.Namespace) -> int:
         raise ArgumentError(
             "--stack and --replace are mutually exclusive. Choose only one."
         )
-    if os.getenv("CONDA_SPAWN", "0") not in ("", "0") and not args.replace and not args.stack:
+    if (
+        os.getenv("CONDA_SPAWN", "0") not in ("", "0")
+        and not args.replace
+        and not args.stack
+    ):
         if current_env := os.getenv("CONDA_PREFIX"):
             env_info = f" for environment '{current_env}'"
         else:
