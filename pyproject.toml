@@ -59,7 +59,7 @@ dev = "python -m pip install -e . --no-deps --no-build-isolation"
 spawn = "python -m conda spawn"
 
 [tool.pixi.feature.docs.tasks]
-docs = { cmd = "sphinx-build -M dirhtml . _build", cwd = "docs" }
+docs = { cmd = "python -m sphinx.cmd.build -M dirhtml . _build", cwd = "docs" }
 serve = { cmd = "python -m http.server", cwd = "docs/_build/dirhtml" }
 clean = { cmd = "rm -rf _build", cwd = "docs" }
 
@@ -73,6 +73,7 @@ sphinx-copybutton = "*"
 sphinx-design = "*"
 sphinx-reredirects = "*"
 sphinx-sitemap = "*"
+sphinxcontrib-programoutput = "*"
 
 [tool.pixi.feature.test.tasks]
 test = 'python -mpytest -vvv'
